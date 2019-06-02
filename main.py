@@ -3,7 +3,7 @@ import stream
 from tkinter import *
 import tkinter.ttk
 import icon
-import tempfile
+
 
 class Main:
     """
@@ -14,10 +14,12 @@ class Main:
     def __init__(self):
         self.__stream_list = {}
 
-        self.window = Tk()
-        self.window.title("FTV Roland Garros to VLC")
+        self.stream_available = False
 
-        self.load_icon();
+        self.window = Tk()
+        self.window.title("HFR-RG 1.0.1")
+
+        self.load_icon()
         menu_bar = Menu(self.window)
 
         menu_bar.add_command(label="Rafraîchir la liste", command=self.refresh_stream_list)
@@ -62,26 +64,36 @@ class Main:
         for stream_info in stream.get_streams_list():
             self.__stream_list[stream_info.title + " (" + stream_info.channel + ")"] = stream_info.video_uuid
         self.stream_selection['values'] = list(self.__stream_list.keys())
+        # Refresh link selection, in order to avoid having an outdated link in the box
+        self.update_link_value()
         self.window.after(self.REFRESH_RATE, self.refresh_stream_list)
 
     def select_link(self, event):
         event.widget.selection_range(0, END)
 
-    def on_link_selection(self, index, value, op):
+    def update_link_value(self):
         self.link.config(state="normal")
         self.link.delete(0, END)
         chosen_stream = self.chosen_stream.get()
         link_value = ""
-        if chosen_stream in self.__stream_list:
+        # No link was selected yet
+        if chosen_stream not in self.__stream_list:
+            self.stream_available = False
+            if chosen_stream != "":
+                link_value = "Live non disponible"
+        else:
             link_value = stream.get_authenticated_stream_url(self.__stream_list[chosen_stream])
+            self.stream_available = True
         self.link.insert(0, link_value)
         self.link.config(state="readonly")
 
+    def on_link_selection(self, index, value, op):
+        self.update_link_value()
+
     def start_vlc(self, event):
-        link_url = self.link.get()
-        if not link_url:
-            return
-        utils.start_vlc(link_url)
+        if self.stream_available:
+            link_url = self.link.get()
+            utils.start_vlc(link_url)
 
 
 Main()

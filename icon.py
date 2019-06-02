@@ -9,5 +9,4 @@ def decode_icon():
     file = tempfile.NamedTemporaryFile(delete=False)
     with file as fd:
         fd.write(base64.b64decode(ICON_HFR))
-    print(file.name)
     return file.name
